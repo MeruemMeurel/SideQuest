@@ -1,2 +1,2 @@
 # SideQuest
-PPM back-end REST API project for UniFi
+SideQuest is a REST API for a small social platform where users share updates about personal projects and interests, follow other profiles, interact through likes and comments, and view a personalized feed. Moderators can remove inappropriate content and block accounts.
