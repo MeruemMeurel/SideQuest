@@ -22,4 +22,5 @@ import social
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/', include("social.urls")),
+    path('api/v1/auth/', include("accounts.urls")),
 ]
