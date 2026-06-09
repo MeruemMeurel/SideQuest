@@ -39,3 +39,17 @@ class CommentListCreateView(generics.ListCreateAPIView):
         post = get_object_or_404(Post, id=self.kwargs['post_id'])
 
         serializer.save(author=self.request.user, post=post)
+
+
+class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = (
+        permissions.IsAuthenticated,
+        IsOwnerOrModeratorForDelete,
+    )
+    http_method_names = (
+        "patch",
+        "delete",
+        "options",
+    )
