@@ -69,7 +69,43 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 
-class UserSerializer(serializers.ModelSerializer):
+class PublicUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "username",
+            "bio",
+            "created_at",
+            "is_active",
+        )
+        read_only_fields = (
+            "id",
+            "created_at",
+            "is_active",
+        )
+
+
+class MeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "username",
+            "email",
+            "bio",
+            "created_at",
+        )
+        read_only_fields = (
+            "id",
+            "username",
+            "email",
+            "bio",
+            "created_at",
+        )
+
+
+class UserUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
