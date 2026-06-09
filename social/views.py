@@ -1,7 +1,8 @@
 from rest_framework import generics, permissions
+from django.shortcuts import get_object_or_404
 
-from .models import Post
-from .serializers import PostSerializer
+from .models import Post, Comment
+from .serializers import PostSerializer, CommentSerializer
 from .permissions import IsOwnerOrModeratorForDelete
 
 class PostListView(generics.ListCreateAPIView):
@@ -26,3 +27,15 @@ class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
         'head',
         'options',
     )
+
+class CommentListCreateView(generics.ListCreateAPIView):
+    serializer_class = CommentSerializer
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+
+    def get_queryset(self):
+        return Comment.objects.filter(post=self.kwargs['post_id'])
+
+    def perform_create(self, serializer):
+        post = get_object_or_404(Post, id=self.kwargs['post_id'])
+
+        serializer.save(author=self.request.user, post=post)
