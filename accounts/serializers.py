@@ -67,3 +67,21 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.groups.add(standard_users_group)
 
         return user
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "username",
+            "email",
+            "bio",
+            "created_at",
+            "is_active",
+        )
+        read_only_fields = (
+            "id",
+            "created_at",
+            "is_active",
+        )
