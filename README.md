@@ -187,14 +187,36 @@ python manage.py test
 
 ## Production Deployment
 
-Required environment variables:
+Required Django environment variables:
 
 - `DJANGO_SECRET_KEY`: a strong secret value for production.
 - `DJANGO_DEBUG`: set to `False`.
 - `DJANGO_ALLOWED_HOSTS`: comma-separated hostnames, for example `sidequest.up.railway.app`.
 
+Required Railway PostgreSQL variables:
+
+```text
+PGDATABASE=${{Postgres.PGDATABASE}}
+PGUSER=${{Postgres.PGUSER}}
+PGPASSWORD=${{Postgres.PGPASSWORD}}
+PGHOST=${{Postgres.PGHOST}}
+PGPORT=${{Postgres.PGPORT}}
+```
+
+Railway Pre-Deploy Command:
+
+```bash
+python manage.py migrate
+```
+
+Run `seed_demo` once after the first successful deployment, not on every deploy:
+
+```bash
+python manage.py seed_demo
+```
+
 Railway-style start command:
 
 ```bash
-gunicorn config.wsgi
+python manage.py collectstatic --noinput && gunicorn config.wsgi --bind 0.0.0.0:$PORT
 ```
