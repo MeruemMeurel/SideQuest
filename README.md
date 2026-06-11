@@ -2,7 +2,7 @@
 
 SideQuest is a Django REST Framework API for a small social platform where users share hobby and project updates, follow other profiles, like and comment on posts, and view a personalized feed. Moderators can remove inappropriate content and block accounts.
 
-Deployment URL: `TODO`
+Deployment URL: `https://sidequest-social.up.railway.app`
 
 ## Technology Stack
 
