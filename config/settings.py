@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'accounts',
     'social',
     'rest_framework',
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -156,4 +157,15 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "SideQuest REST API",
+    "DESCRIPTION": (
+        "Social Media API for hobby and project updates, with JWT authentication, "
+        "profiles, posts, comments, follows, likes, a personalized feed, and moderation."
+    ),
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
 }

@@ -329,6 +329,22 @@ curl -i -X POST "$BASE_URL/api/v1/moderation/users/3/unblock/" \
 - Forbidden action: HTTP `403`.
 - Invalid content: HTTP `400`.
 
+## Interactive API Documentation
+
+Swagger UI:
+
+`https://sidequest-social.up.railway.app/api/docs/`
+
+ReDoc:
+
+`https://sidequest-social.up.railway.app/api/redoc/`
+
+OpenAPI schema:
+
+`https://sidequest-social.up.railway.app/api/schema/`
+
+Swagger UI allows endpoint testing directly from the browser. For protected endpoints, obtain an access token from `/api/v1/auth/token/`, click **Authorize**, and enter the access token.
+
 ## Automated Tests
 
 ```powershell
