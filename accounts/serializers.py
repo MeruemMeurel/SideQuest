@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.auth.password_validation import validate_password
+from drf_spectacular.utils import OpenApiTypes, extend_schema_field
 from rest_framework import serializers
 
 
@@ -70,6 +71,10 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class PublicUserSerializer(serializers.ModelSerializer):
+    posts_count = serializers.SerializerMethodField()
+    followers_count = serializers.SerializerMethodField()
+    following_count = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = (
@@ -78,12 +83,30 @@ class PublicUserSerializer(serializers.ModelSerializer):
             "bio",
             "created_at",
             "is_active",
+            "posts_count",
+            "followers_count",
+            "following_count",
         )
         read_only_fields = (
             "id",
             "created_at",
             "is_active",
+            "posts_count",
+            "followers_count",
+            "following_count",
         )
+
+    @extend_schema_field(OpenApiTypes.INT)
+    def get_posts_count(self, obj):
+        return getattr(obj, "posts_count", obj.posts.count())
+
+    @extend_schema_field(OpenApiTypes.INT)
+    def get_followers_count(self, obj):
+        return getattr(obj, "followers_count", obj.followers.count())
+
+    @extend_schema_field(OpenApiTypes.INT)
+    def get_following_count(self, obj):
+        return getattr(obj, "following_count", obj.following.count())
 
 
 class MeSerializer(serializers.ModelSerializer):

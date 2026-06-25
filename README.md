@@ -108,6 +108,7 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 | GET | `/api/v1/auth/me/` | Yes | Active authenticated user | None | Return the current authenticated user | `200 + JSON object`, `401 without authentication` |
 | GET | `/api/v1/users/` | No | Anyone | None | List public user profiles | `200 + JSON list` |
 | GET | `/api/v1/users/{id}/` | No | Anyone | None | Retrieve a public user profile | `200 + JSON object`, `404 if missing` |
+| GET | `/api/v1/users/{id}/posts/` | No | Anyone | None | List posts authored by one user | `200 + JSON list`, `404 if user is missing` |
 | PATCH | `/api/v1/users/{id}/` | Yes | Profile owner only | `username`, `email`, `bio` | Update own profile | `200 + updated object`, `401 without authentication`, `403 when permission is missing` |
 | GET | `/api/v1/posts/` | No | Anyone | None | List posts | `200 + JSON list` |
 | POST | `/api/v1/posts/` | Yes | Active authenticated user | `content` | Create a post | `201 + created object`, `400 on invalid content`, `401 without authentication` |
@@ -174,6 +175,12 @@ Follow a user:
 ```bash
 curl -X POST http://127.0.0.1:8000/api/v1/users/2/follow/ \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+List posts by one user:
+
+```bash
+curl http://127.0.0.1:8000/api/v1/users/2/posts/
 ```
 
 Like a post:
@@ -328,6 +335,14 @@ curl -i -X POST "$BASE_URL/api/v1/moderation/users/3/unblock/" \
 - Unauthenticated protected request: HTTP `401`.
 - Forbidden action: HTTP `403`.
 - Invalid content: HTTP `400`.
+
+## Response Readability Fields
+
+Public profile responses include `posts_count`, `followers_count`, and `following_count`.
+
+Post responses include `author_username`, `likes_count`, and `comments_count`.
+
+Comment responses include `author_username`.
 
 ## Interactive API Documentation
 

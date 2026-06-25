@@ -13,11 +13,13 @@ from .views import (
     UnblockUserView,
     UnfollowView,
     UnlikeView,
+    UserPostListView,
 )
 
 urlpatterns = [
     path("users/", UserListView.as_view(), name="user-list"),
     path("users/<int:pk>/", UserDetailView.as_view(), name="user-detail"),
+    path("users/<int:user_id>/posts/", UserPostListView.as_view(), name="user-post-list"),
     path("users/<int:user_id>/follow/", FollowView.as_view(), name="user-follow"),
     path("users/<int:user_id>/unfollow/", UnfollowView.as_view(), name="user-unfollow"),
     path("posts/", PostListView.as_view(), name="post-list"),

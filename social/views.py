@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Q
+from django.db.models import Count, Q
 from drf_spectacular.utils import OpenApiTypes, extend_schema
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
@@ -18,18 +18,22 @@ from .permissions import (
 User = get_user_model()
 
 class PostListView(generics.ListCreateAPIView):
-    queryset = Post.objects.all()
     serializer_class = PostSerializer
     permission_classes = (
         permissions.IsAuthenticatedOrReadOnly,
         IsActiveUserForUnsafeMethods,
     )
 
+    def get_queryset(self):
+        return Post.objects.select_related("author").annotate(
+            likes_count=Count("likes", distinct=True),
+            comments_count=Count("comments", distinct=True),
+        )
+
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
 class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Post.objects.all()
     serializer_class = PostSerializer
     permission_classes = (
         permissions.IsAuthenticatedOrReadOnly,
@@ -43,6 +47,12 @@ class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
         'options',
     )
 
+    def get_queryset(self):
+        return Post.objects.select_related("author").annotate(
+            likes_count=Count("likes", distinct=True),
+            comments_count=Count("comments", distinct=True),
+        )
+
 class CommentListCreateView(generics.ListCreateAPIView):
     serializer_class = CommentSerializer
     permission_classes = (
@@ -51,7 +61,7 @@ class CommentListCreateView(generics.ListCreateAPIView):
     )
 
     def get_queryset(self):
-        return Comment.objects.filter(post=self.kwargs['post_id'])
+        return Comment.objects.select_related("author").filter(post=self.kwargs['post_id'])
 
     def perform_create(self, serializer):
         post = get_object_or_404(Post, id=self.kwargs['post_id'])
@@ -60,7 +70,6 @@ class CommentListCreateView(generics.ListCreateAPIView):
 
 
 class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = (
         permissions.IsAuthenticated,
@@ -71,6 +80,24 @@ class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
         "delete",
         "options",
     )
+
+    def get_queryset(self):
+        return Comment.objects.select_related("author")
+
+
+class UserPostListView(generics.ListAPIView):
+    serializer_class = PostSerializer
+    permission_classes = (
+        permissions.AllowAny,
+    )
+
+    def get_queryset(self):
+        user = get_object_or_404(User, id=self.kwargs["user_id"])
+
+        return Post.objects.select_related("author").filter(author=user).annotate(
+            likes_count=Count("likes", distinct=True),
+            comments_count=Count("comments", distinct=True),
+        )
 
 
 class FollowView(APIView):
@@ -200,6 +227,9 @@ class FeedView(generics.ListAPIView):
 
         return Post.objects.filter(
             Q(author=self.request.user) | Q(author_id__in=followed_user_ids)
+        ).select_related("author").annotate(
+            likes_count=Count("likes", distinct=True),
+            comments_count=Count("comments", distinct=True),
         ).order_by("-created_at")
 
 

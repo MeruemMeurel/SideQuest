@@ -1,6 +1,7 @@
 from rest_framework import generics, permissions
 
 from django.contrib.auth import get_user_model
+from django.db.models import Count
 
 from .permissions import IsOwnerOrReadOnly
 from .serializers import (
@@ -22,15 +23,20 @@ class RegisterView(generics.CreateAPIView):
 
 
 class UserListView(generics.ListAPIView):
-    queryset = User.objects.all()
     serializer_class = PublicUserSerializer
     permission_classes = (
         permissions.AllowAny,
     )
 
+    def get_queryset(self):
+        return User.objects.annotate(
+            posts_count=Count("posts", distinct=True),
+            followers_count=Count("followers", distinct=True),
+            following_count=Count("following", distinct=True),
+        )
+
 
 class UserDetailView(generics.RetrieveUpdateAPIView):
-    queryset = User.objects.all()
     permission_classes = (
         IsOwnerOrReadOnly,
     )
@@ -46,6 +52,13 @@ class UserDetailView(generics.RetrieveUpdateAPIView):
             return UserUpdateSerializer
 
         return PublicUserSerializer
+
+    def get_queryset(self):
+        return User.objects.annotate(
+            posts_count=Count("posts", distinct=True),
+            followers_count=Count("followers", distinct=True),
+            following_count=Count("following", distinct=True),
+        )
 
 
 class MeView(generics.RetrieveAPIView):

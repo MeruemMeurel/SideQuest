@@ -107,6 +107,34 @@ class SideQuestAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertNotIn("email", response.data[0])
 
+    def test_public_profile_detail_includes_statistics(self):
+        Post.objects.create(
+            author=self.user,
+            content="Another quest log entry.",
+        )
+        Follow.objects.create(follower=self.alice, followed=self.user)
+        Follow.objects.create(follower=self.user, followed=self.bob)
+
+        response = self.client.get(f"/api/v1/users/{self.user.id}/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["posts_count"], 2)
+        self.assertEqual(response.data["followers_count"], 1)
+        self.assertEqual(response.data["following_count"], 1)
+        self.assertNotIn("email", response.data)
+
+    def test_public_user_list_includes_statistics(self):
+        Follow.objects.create(follower=self.alice, followed=self.user)
+
+        response = self.client.get("/api/v1/users/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        first_user = response.data[0]
+        self.assertIn("posts_count", first_user)
+        self.assertIn("followers_count", first_user)
+        self.assertIn("following_count", first_user)
+        self.assertNotIn("email", first_user)
+
     def test_anonymous_post_creation_returns_401(self):
         response = self.client.post(
             "/api/v1/posts/",
@@ -126,6 +154,24 @@ class SideQuestAPITests(APITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["author_username"], self.user.username)
+        self.assertEqual(response.data["likes_count"], 0)
+        self.assertEqual(response.data["comments_count"], 0)
+
+    def test_post_response_includes_readability_fields(self):
+        Like.objects.create(user=self.alice, post=self.user_post)
+        Comment.objects.create(
+            author=self.alice,
+            post=self.user_post,
+            content="Readable response confirmed.",
+        )
+
+        response = self.client.get(f"/api/v1/posts/{self.user_post.id}/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["author_username"], self.user.username)
+        self.assertEqual(response.data["likes_count"], 1)
+        self.assertEqual(response.data["comments_count"], 1)
 
     def test_owner_can_patch_own_post(self):
         self.authenticate(self.user)
@@ -169,6 +215,20 @@ class SideQuestAPITests(APITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["author_username"], self.user.username)
+
+    def test_comment_response_includes_author_username(self):
+        comment = Comment.objects.create(
+            author=self.alice,
+            post=self.user_post,
+            content="Readable comment.",
+        )
+
+        response = self.client.get(f"/api/v1/posts/{self.user_post.id}/comments/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        comment_data = next(item for item in response.data if item["id"] == comment.id)
+        self.assertEqual(comment_data["author_username"], self.alice.username)
 
     def test_non_owner_cannot_edit_another_users_comment(self):
         comment = Comment.objects.create(
@@ -229,6 +289,25 @@ class SideQuestAPITests(APITestCase):
         post_ids = {item["id"] for item in response.data}
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertNotIn(self.bob_post.id, post_ids)
+
+    def test_user_posts_returns_only_selected_users_posts(self):
+        Post.objects.create(
+            author=self.user,
+            content="Another selected user post.",
+        )
+
+        response = self.client.get(f"/api/v1/users/{self.user.id}/posts/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        post_ids = {item["id"] for item in response.data}
+        self.assertIn(self.user_post.id, post_ids)
+        self.assertNotIn(self.alice_post.id, post_ids)
+        self.assertNotIn(self.bob_post.id, post_ids)
+
+    def test_user_posts_missing_user_returns_404(self):
+        response = self.client.get("/api/v1/users/999999/posts/")
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_normal_user_cannot_block_accounts(self):
         self.authenticate(self.user)
