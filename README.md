@@ -331,6 +331,14 @@ curl -i -X POST "$BASE_URL/api/v1/moderation/users/3/unblock/" \
 
 ## Interactive API Documentation
 
+The root deployment URL:
+
+`https://sidequest-social.up.railway.app/`
+
+redirects to Swagger UI:
+
+`https://sidequest-social.up.railway.app/api/docs/`
+
 Swagger UI:
 
 `https://sidequest-social.up.railway.app/api/docs/`

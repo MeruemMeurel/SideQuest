@@ -304,3 +304,24 @@ class SideQuestAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Post.objects.filter(id=self.user_post.id).exists())
+
+    def test_root_redirects_to_swagger_ui(self):
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, status.HTTP_302_FOUND)
+        self.assertEqual(response["Location"], "/api/docs/")
+
+    def test_openapi_schema_returns_200(self):
+        response = self.client.get("/api/schema/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_swagger_ui_returns_200(self):
+        response = self.client.get("/api/docs/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_redoc_returns_200(self):
+        response = self.client.get("/api/redoc/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
