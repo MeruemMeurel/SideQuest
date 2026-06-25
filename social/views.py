@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from drf_spectacular.utils import OpenApiTypes, extend_schema
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -78,6 +79,7 @@ class FollowView(APIView):
         IsActiveUserForUnsafeMethods,
     )
 
+    @extend_schema(request=None, responses={201: OpenApiTypes.OBJECT})
     def post(self, request, user_id):
         followed = get_object_or_404(User, id=user_id)
 
@@ -118,6 +120,7 @@ class UnfollowView(APIView):
         IsActiveUserForUnsafeMethods,
     )
 
+    @extend_schema(request=None, responses={204: None})
     def delete(self, request, user_id):
         followed = get_object_or_404(User, id=user_id)
         follow = get_object_or_404(
@@ -136,6 +139,7 @@ class LikeView(APIView):
         IsActiveUserForUnsafeMethods,
     )
 
+    @extend_schema(request=None, responses={201: OpenApiTypes.OBJECT})
     def post(self, request, post_id):
         post = get_object_or_404(Post, id=post_id)
 
@@ -170,6 +174,7 @@ class UnlikeView(APIView):
         IsActiveUserForUnsafeMethods,
     )
 
+    @extend_schema(request=None, responses={204: None})
     def delete(self, request, post_id):
         post = get_object_or_404(Post, id=post_id)
         like = get_object_or_404(
@@ -203,6 +208,7 @@ class BlockUserView(APIView):
         IsModerator,
     )
 
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
     def post(self, request, user_id):
         user = get_object_or_404(User, id=user_id)
 
@@ -230,6 +236,7 @@ class UnblockUserView(APIView):
         IsModerator,
     )
 
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
     def post(self, request, user_id):
         user = get_object_or_404(User, id=user_id)
         user.is_active = True
