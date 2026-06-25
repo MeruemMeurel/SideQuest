@@ -166,6 +166,6 @@ SPECTACULAR_SETTINGS = {
         "Social Media API for hobby and project updates, with JWT authentication, "
         "profiles, posts, comments, follows, likes, a personalized feed, and moderation."
     ),
-    "VERSION": "1.0.0",
+    "VERSION": "1.1.1",
     "SERVE_INCLUDE_SCHEMA": False,
 }
