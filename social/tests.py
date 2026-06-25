@@ -1,5 +1,8 @@
+from datetime import datetime
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -275,7 +278,7 @@ class SideQuestAPITests(APITestCase):
 
         response = self.client.get("/api/v1/feed/")
 
-        post_ids = {item["id"] for item in response.data}
+        post_ids = {item["id"] for item in response.data["results"]}
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn(self.user_post.id, post_ids)
         self.assertIn(self.alice_post.id, post_ids)
@@ -286,7 +289,7 @@ class SideQuestAPITests(APITestCase):
 
         response = self.client.get("/api/v1/feed/")
 
-        post_ids = {item["id"] for item in response.data}
+        post_ids = {item["id"] for item in response.data["results"]}
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertNotIn(self.bob_post.id, post_ids)
 
@@ -299,7 +302,7 @@ class SideQuestAPITests(APITestCase):
         response = self.client.get(f"/api/v1/users/{self.user.id}/posts/")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        post_ids = {item["id"] for item in response.data}
+        post_ids = {item["id"] for item in response.data["results"]}
         self.assertIn(self.user_post.id, post_ids)
         self.assertNotIn(self.alice_post.id, post_ids)
         self.assertNotIn(self.bob_post.id, post_ids)
@@ -308,6 +311,150 @@ class SideQuestAPITests(APITestCase):
         response = self.client.get("/api/v1/users/999999/posts/")
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_post_list_pagination_returns_expected_shape(self):
+        response = self.client.get("/api/v1/posts/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("count", response.data)
+        self.assertIn("next", response.data)
+        self.assertIn("previous", response.data)
+        self.assertIn("results", response.data)
+
+    def test_post_list_page_size_works(self):
+        for index in range(5):
+            Post.objects.create(
+                author=self.user,
+                content=f"Page size quest {index}.",
+            )
+
+        response = self.client.get("/api/v1/posts/?page_size=2")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["results"]), 2)
+
+    def test_post_list_page_size_cannot_exceed_maximum(self):
+        for index in range(60):
+            Post.objects.create(
+                author=self.user,
+                content=f"Maximum page quest {index}.",
+            )
+
+        response = self.client.get("/api/v1/posts/?page_size=99")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["results"]), 50)
+
+    def test_post_search_matches_content(self):
+        guitar_post = Post.objects.create(
+            author=self.user,
+            content="Practiced guitar until the chord sounded honest.",
+        )
+
+        response = self.client.get("/api/v1/posts/?search=guitar")
+
+        post_ids = {item["id"] for item in response.data["results"]}
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn(guitar_post.id, post_ids)
+        self.assertNotIn(self.alice_post.id, post_ids)
+
+    def test_post_search_matches_author_username(self):
+        response = self.client.get("/api/v1/posts/?search=alice")
+
+        post_ids = {item["id"] for item in response.data["results"]}
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn(self.alice_post.id, post_ids)
+        self.assertNotIn(self.user_post.id, post_ids)
+
+    def test_post_author_filter_works(self):
+        response = self.client.get(f"/api/v1/posts/?author={self.alice.id}")
+
+        post_ids = {item["id"] for item in response.data["results"]}
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn(self.alice_post.id, post_ids)
+        self.assertNotIn(self.user_post.id, post_ids)
+
+    def test_post_created_after_filter_works(self):
+        old_post = Post.objects.create(
+            author=self.user,
+            content="Old quest.",
+        )
+        Post.objects.filter(id=old_post.id).update(
+            created_at=timezone.make_aware(datetime(2026, 5, 1))
+        )
+
+        response = self.client.get("/api/v1/posts/?created_after=2026-06-01")
+
+        post_ids = {item["id"] for item in response.data["results"]}
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertNotIn(old_post.id, post_ids)
+
+    def test_post_created_before_filter_works(self):
+        old_post = Post.objects.create(
+            author=self.user,
+            content="Older quest.",
+        )
+        Post.objects.filter(id=old_post.id).update(
+            created_at=timezone.make_aware(datetime(2026, 5, 1))
+        )
+
+        response = self.client.get("/api/v1/posts/?created_before=2026-06-01")
+
+        post_ids = {item["id"] for item in response.data["results"]}
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn(old_post.id, post_ids)
+        self.assertNotIn(self.user_post.id, post_ids)
+
+    def test_user_posts_endpoint_is_paginated(self):
+        for index in range(12):
+            Post.objects.create(
+                author=self.user,
+                content=f"User post page quest {index}.",
+            )
+
+        response = self.client.get(f"/api/v1/users/{self.user.id}/posts/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 13)
+        self.assertEqual(len(response.data["results"]), 10)
+
+    def test_user_posts_search_stays_within_selected_user(self):
+        user_post = Post.objects.create(
+            author=self.user,
+            content="Guitar practice notes.",
+        )
+        alice_post = Post.objects.create(
+            author=self.alice,
+            content="Guitar strings and ravens.",
+        )
+
+        response = self.client.get(
+            f"/api/v1/users/{self.user.id}/posts/?search=guitar"
+        )
+
+        post_ids = {item["id"] for item in response.data["results"]}
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn(user_post.id, post_ids)
+        self.assertNotIn(alice_post.id, post_ids)
+
+    def test_user_posts_author_filter_cannot_escape_selected_user_scope(self):
+        response = self.client.get(
+            f"/api/v1/users/{self.user.id}/posts/?author={self.alice.id}"
+        )
+
+        post_ids = {item["id"] for item in response.data["results"]}
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(post_ids, set())
+
+    def test_feed_pagination_works(self):
+        Follow.objects.create(follower=self.user, followed=self.alice)
+        self.authenticate(self.user)
+
+        response = self.client.get("/api/v1/feed/?page_size=1")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("count", response.data)
+        self.assertEqual(len(response.data["results"]), 1)
 
     def test_normal_user_cannot_block_accounts(self):
         self.authenticate(self.user)

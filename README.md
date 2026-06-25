@@ -108,9 +108,9 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 | GET | `/api/v1/auth/me/` | Yes | Active authenticated user | None | Return the current authenticated user | `200 + JSON object`, `401 without authentication` |
 | GET | `/api/v1/users/` | No | Anyone | None | List public user profiles | `200 + JSON list` |
 | GET | `/api/v1/users/{id}/` | No | Anyone | None | Retrieve a public user profile | `200 + JSON object`, `404 if missing` |
-| GET | `/api/v1/users/{id}/posts/` | No | Anyone | None | List posts authored by one user | `200 + JSON list`, `404 if user is missing` |
+| GET | `/api/v1/users/{id}/posts/` | No | Anyone | Optional query params: `page`, `page_size`, `search`, `author`, `created_after`, `created_before` | List posts authored by one user | `200 + paginated JSON list`, `404 if user is missing` |
 | PATCH | `/api/v1/users/{id}/` | Yes | Profile owner only | `username`, `email`, `bio` | Update own profile | `200 + updated object`, `401 without authentication`, `403 when permission is missing` |
-| GET | `/api/v1/posts/` | No | Anyone | None | List posts | `200 + JSON list` |
+| GET | `/api/v1/posts/` | No | Anyone | Optional query params: `page`, `page_size`, `search`, `author`, `created_after`, `created_before` | List posts | `200 + paginated JSON list` |
 | POST | `/api/v1/posts/` | Yes | Active authenticated user | `content` | Create a post | `201 + created object`, `400 on invalid content`, `401 without authentication` |
 | GET | `/api/v1/posts/{id}/` | No | Anyone | None | Retrieve a post | `200 + JSON object`, `404 if missing` |
 | PATCH | `/api/v1/posts/{id}/` | Yes | Post owner only | `content` | Update own post | `200 + updated object`, `403 when permission is missing`, `400 on invalid content` |
@@ -123,7 +123,7 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 | DELETE | `/api/v1/users/{id}/unfollow/` | Yes | Active authenticated user | None | Unfollow a user | `204 No Content`, `404 if not following` |
 | POST | `/api/v1/posts/{id}/like/` | Yes | Active authenticated user | None | Like a post | `201 + created object`, `400 on duplicate action`, `401 without authentication` |
 | DELETE | `/api/v1/posts/{id}/unlike/` | Yes | Active authenticated user | None | Remove a like | `204 No Content`, `404 if not liked` |
-| GET | `/api/v1/feed/` | Yes | Authenticated user | None | List own posts and followed users' posts | `200 + JSON list`, `401 without authentication` |
+| GET | `/api/v1/feed/` | Yes | Authenticated user | Optional query params: `page`, `page_size` | List own posts and followed users' posts | `200 + paginated JSON list`, `401 without authentication` |
 | POST | `/api/v1/moderation/users/{id}/block/` | Yes | Moderator only | None | Block an account | `200 + JSON object`, `403 when permission is missing`, `400 when blocking self` |
 | POST | `/api/v1/moderation/users/{id}/unblock/` | Yes | Moderator only | None | Unblock an account | `200 + JSON object`, `403 when permission is missing` |
 
@@ -343,6 +343,39 @@ Public profile responses include `posts_count`, `followers_count`, and `followin
 Post responses include `author_username`, `likes_count`, and `comments_count`.
 
 Comment responses include `author_username`.
+
+## API Usability Features
+
+Paginated post endpoints return this shape:
+
+```json
+{
+  "count": 0,
+  "next": null,
+  "previous": null,
+  "results": []
+}
+```
+
+Pagination is available on the public post list, user posts, and personalized feed. Use `page` and `page_size` to navigate results; `page_size` is capped at 50.
+
+Post search is available on the public post list and user posts. It matches post `content` and `author_username`.
+
+Post filters are available on the public post list and user posts. Use `author` for author ID, plus `created_after` and `created_before` for creation date filtering. The user posts endpoint always remains scoped to the selected user.
+
+```bash
+BASE_URL=https://sidequest-social.up.railway.app
+
+curl "$BASE_URL/api/v1/posts/?page=1&page_size=5"
+curl "$BASE_URL/api/v1/posts/?search=guitar"
+curl "$BASE_URL/api/v1/posts/?search=alice"
+curl "$BASE_URL/api/v1/posts/?author=2"
+curl "$BASE_URL/api/v1/posts/?created_after=2026-06-01"
+curl "$BASE_URL/api/v1/posts/?created_before=2026-06-30"
+curl "$BASE_URL/api/v1/users/2/posts/"
+curl "$BASE_URL/api/v1/feed/?page=1&page_size=5" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+```
 
 ## Interactive API Documentation
 

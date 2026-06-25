@@ -1,12 +1,16 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Count, Q
+from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiTypes, extend_schema
 from rest_framework import generics, permissions, status
+from rest_framework.filters import SearchFilter
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 
+from .filters import PostFilter
 from .models import Comment, Follow, Like, Post
+from .pagination import SideQuestPagination
 from .serializers import PostSerializer, CommentSerializer
 from .permissions import (
     IsActiveUserForUnsafeMethods,
@@ -19,6 +23,16 @@ User = get_user_model()
 
 class PostListView(generics.ListCreateAPIView):
     serializer_class = PostSerializer
+    pagination_class = SideQuestPagination
+    filter_backends = (
+        DjangoFilterBackend,
+        SearchFilter,
+    )
+    filterset_class = PostFilter
+    search_fields = (
+        "content",
+        "author__username",
+    )
     permission_classes = (
         permissions.IsAuthenticatedOrReadOnly,
         IsActiveUserForUnsafeMethods,
@@ -28,7 +42,7 @@ class PostListView(generics.ListCreateAPIView):
         return Post.objects.select_related("author").annotate(
             likes_count=Count("likes", distinct=True),
             comments_count=Count("comments", distinct=True),
-        )
+        ).order_by("-created_at")
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
@@ -86,7 +100,18 @@ class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class UserPostListView(generics.ListAPIView):
+    queryset = Post.objects.none()
     serializer_class = PostSerializer
+    pagination_class = SideQuestPagination
+    filter_backends = (
+        DjangoFilterBackend,
+        SearchFilter,
+    )
+    filterset_class = PostFilter
+    search_fields = (
+        "content",
+        "author__username",
+    )
     permission_classes = (
         permissions.AllowAny,
     )
@@ -97,7 +122,7 @@ class UserPostListView(generics.ListAPIView):
         return Post.objects.select_related("author").filter(author=user).annotate(
             likes_count=Count("likes", distinct=True),
             comments_count=Count("comments", distinct=True),
-        )
+        ).order_by("-created_at")
 
 
 class FollowView(APIView):
@@ -216,6 +241,7 @@ class UnlikeView(APIView):
 
 class FeedView(generics.ListAPIView):
     serializer_class = PostSerializer
+    pagination_class = SideQuestPagination
     permission_classes = (
         permissions.IsAuthenticated,
     )
