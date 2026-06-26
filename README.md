@@ -415,7 +415,7 @@ Required Django environment variables:
 
 - `DJANGO_SECRET_KEY`: a strong secret value for production.
 - `DJANGO_DEBUG`: set to `False`.
-- `DJANGO_ALLOWED_HOSTS`: comma-separated hostnames, for example `sidequest.up.railway.app`.
+- `DJANGO_ALLOWED_HOSTS`: comma-separated hostnames, for example `sidequest-social.up.railway.app`.
 
 Required Railway PostgreSQL variables:
 
