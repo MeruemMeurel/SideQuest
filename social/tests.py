@@ -321,6 +321,28 @@ class SideQuestAPITests(APITestCase):
         self.assertIn("previous", response.data)
         self.assertIn("results", response.data)
 
+    def test_post_list_with_html_accept_returns_json_200(self):
+        response = self.client.get(
+            "/api/v1/posts/",
+            HTTP_ACCEPT="text/html",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.accepted_renderer.format, "json")
+        self.assertIn("application/json", response["Content-Type"])
+        self.assertIn("results", response.data)
+
+    def test_post_list_with_json_accept_returns_json_200(self):
+        response = self.client.get(
+            "/api/v1/posts/",
+            HTTP_ACCEPT="application/json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.accepted_renderer.format, "json")
+        self.assertIn("application/json", response["Content-Type"])
+        self.assertIn("results", response.data)
+
     def test_post_list_page_size_works(self):
         for index in range(5):
             Post.objects.create(
@@ -543,11 +565,17 @@ class SideQuestAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_swagger_ui_returns_200(self):
-        response = self.client.get("/api/docs/")
+        response = self.client.get(
+            "/api/docs/",
+            HTTP_ACCEPT="text/html",
+        )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_redoc_returns_200(self):
-        response = self.client.get("/api/redoc/")
+        response = self.client.get(
+            "/api/redoc/",
+            HTTP_ACCEPT="text/html",
+        )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)

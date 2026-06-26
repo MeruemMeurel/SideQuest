@@ -401,6 +401,8 @@ OpenAPI schema:
 
 Swagger UI allows endpoint testing directly from the browser. For protected endpoints, obtain an access token from `/api/v1/auth/token/`, click **Authorize**, and enter the access token.
 
+Public `GET` API endpoints can also be opened directly in the browser and return JSON. Use Swagger UI for graphical interactive testing. Protected endpoints still require JWT authorization. `/api/schema/` may display or download a YAML OpenAPI file depending on the browser.
+
 ## Automated Tests
 
 ```powershell
